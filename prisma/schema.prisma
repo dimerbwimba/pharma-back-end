@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// The User model represents users in the system, 
+// who have roles like super_admin, admin, or user
+model User {
+  id          String           @id @default(uuid()) // Unique ID as a UUID for each user
+  username    String           @unique // Username must be unique
+  email       String           @unique // Email must be unique for each user
+  password    String
+  role        Role             @default(user) // Reference an Enum type, Role default gon be a user
+  // Defines a many-to-many relationship 
+  // with permissions through UserPermission
+  permissions UserPermission[]
+}
+
+// The Permission model defines various 
+// actions users can take on resources
+model Permission {
+  // Unique ID as a UUID for each permission
+  id String @id @default(uuid())
+
+  // Type of action permitted (see Action enum below)
+  action Action
+
+  // Resource on which the action is allowed (see Resource enum below)
+  resource Resource
+
+  // Defines a many-to-many relationship with users through UserPermission
+  users UserPermission[]
+}
+
+// The UserPermission model is
+// a join table linking User and Permission
+// It allows each user to have multiple 
+// permissions and each permission to be 
+// assigned to multiple users
+model UserPermission {
+  // Unique ID as a UUID for each permission link
+  id           String     @id @default(uuid())
+
+  // Foreign key referencing User.id
+  userId       String
+
+  // Foreign key referencing Permission.id
+  permissionId String
+
+  // Establishes relation with User model
+  user         User       @relation(fields: [userId], references: [id])
+
+  // Establishes relation with Permission model
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  // Ensures each user-permission pair is unique
+  @@unique([userId, permissionId])
+}
+
+
+enum Action {
+  READ
+  WRITE
+  DELETE
+  UPDATE
+}
+
+enum Resource {
+  USER
+  PHARMACY_RECORD
+  INVENTORY
+  REPORT
+}
+// Enum to define the role levels for users
+enum Role {
+  // High-level permissions, often unrestricted access
+  super_admin
+  // Moderate permissions, may have management abilities
+  admin
+  // Basic permissions, limited access to resources
+  user
+}
+// Enum to define the actions that can be permitted on resources
+
+
